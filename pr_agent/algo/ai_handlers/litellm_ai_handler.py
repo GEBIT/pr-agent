@@ -242,7 +242,9 @@ class LiteLLMAIHandler(BaseAiHandler):
             if get_settings().config.verbosity_level >= 2:
                 get_logger().info(f"\nSystem prompt:\n{system}")
                 get_logger().info(f"\nUser prompt:\n{user}")
-
+            
+            if "ollama" in model:
+                kwargs["num_ctx"] = get_settings().config.max_model_tokens
             response = await acompletion(**kwargs)
         except (openai.APIError, openai.APITimeoutError) as e:
             get_logger().warning(f"Error during LLM inference: {e}")
@@ -264,15 +266,14 @@ class LiteLLMAIHandler(BaseAiHandler):
             response_log = self.prepare_logs(response, system, user, resp, finish_reason)
             get_logger().debug("Full_response", artifact=response_log)
 
-            # for CLI debugging
+            if ("<think>" in resp):
+                # remove think content between tags
+                get_logger().info("Removing think content...")
+                get_logger().info(f"Think content: {resp[resp.index('<think>'):resp.index('</think>')]}")
+                startIndex = resp.index("<think>")
+                stopIndex = resp.index("</think>")
+                resp = resp[:startIndex] + resp[stopIndex+len("</think>"):]
             if get_settings().config.verbosity_level >= 2:
                 get_logger().info(f"\nAI response:\n{resp}")
-            
-        if (resp.includes("<think>")):
-            # remove content between tags
-            get_logger().debug("Removing think content...")
-            startIndex = resp.index("<think>")
-            stopIndex = resp.index("</think>")
-            resp = resp[:startIndex] + resp[stopIndex+len("</think>"):]
 
         return resp, finish_reason
