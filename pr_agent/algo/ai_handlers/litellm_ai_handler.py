@@ -267,5 +267,12 @@ class LiteLLMAIHandler(BaseAiHandler):
             # for CLI debugging
             if get_settings().config.verbosity_level >= 2:
                 get_logger().info(f"\nAI response:\n{resp}")
+            
+        if (resp.includes("<think>")):
+            # remove content between tags
+            get_logger().debug("Removing think content...")
+            startIndex = resp.index("<think>")
+            stopIndex = resp.index("</think>")
+            resp = resp[:startIndex] + resp[stopIndex+len("</think>"):]
 
         return resp, finish_reason
