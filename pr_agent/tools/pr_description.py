@@ -167,7 +167,10 @@ class PRDescription:
                         self.git_provider.publish_labels(new_labels)
                     else:
                         get_logger().debug(f"Labels are the same, not updating")
-
+                
+                global skippingFiles
+                if skippingFiles:
+                    pr_body += "\nWarning: Some files were skipped, because the request is to large!\n"
                 # publish description
                 if get_settings().pr_description.publish_description_as_comment:
                     full_markdown_description = f"## Title\n\n{pr_title}\n\n___\n{pr_body}"
