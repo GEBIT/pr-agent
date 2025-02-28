@@ -4,6 +4,7 @@ import re
 from typing import Optional, Tuple
 from urllib.parse import urlparse
 
+import sys
 import gitlab
 import requests
 from gitlab import GitlabGetError
@@ -179,6 +180,7 @@ class GitLabProvider(GitProvider):
             self.mr.save()
         except Exception as e:
             get_logger().exception(f"Could not update merge request {self.id_mr} description: {e}")
+            sys.exit(f"Could not update merge request {self.id_mr} description: {e}")
 
     def get_latest_commit_url(self):
         return self.mr.commits().next().web_url

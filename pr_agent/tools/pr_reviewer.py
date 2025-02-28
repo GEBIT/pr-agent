@@ -260,6 +260,10 @@ class PRReviewer:
         # Output the relevant configurations if enabled
         if get_settings().get('config', {}).get('output_relevant_configurations', False):
             markdown_text += show_relevant_configurations(relevant_section='pr_reviewer')
+        
+        global skippingFiles
+        if skippingFiles:
+            markdown_text += "\nWarning: Some files were skipped, because the request is to large!"
 
         # Add custom labels from the review prediction (effort, security)
         self.set_review_labels(data)

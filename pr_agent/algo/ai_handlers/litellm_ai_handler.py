@@ -244,7 +244,10 @@ class LiteLLMAIHandler(BaseAiHandler):
                 get_logger().info(f"\nUser prompt:\n{user}")
             
             if "ollama" in model:
-                kwargs["num_ctx"] = get_settings().config.max_model_tokens
+                # Set variable context size for ollama models
+                # Duplicate context window to leave space for result
+                kwargs["num_ctx"] = 2 * get_settings().config.max_model_tokens
+                get_logger().info(f"Max model tokens is {get_settings().config.max_model_tokens} and setting ollama context size to " + kwargs["num_ctx"])
             response = await acompletion(**kwargs)
         except (openai.APIError, openai.APITimeoutError) as e:
             get_logger().warning(f"Error during LLM inference: {e}")

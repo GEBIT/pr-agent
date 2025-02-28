@@ -318,6 +318,8 @@ def generate_full_patch(convert_hunks_to_line_numbers, file_dict, max_tokens_mod
             #  until we meet the requirements
             if get_settings().config.verbosity_level >= 2:
                 get_logger().warning(f"Patch too large, skipping it: '{filename}'")
+                global skippingFiles
+                skippingFiles = True
             remaining_files_list_new.append(filename)
             continue
 

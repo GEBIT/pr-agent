@@ -708,6 +708,7 @@ def load_yaml(response_text: str, keys_fix_yaml: List[str] = [], first_key="", l
         if not data:
             get_logger().error(f"Failed to parse AI prediction after fallbacks",
                                artifact={'response_text': response_text})
+            sys.exit(f"Failed to parse AI prediction after fallbacks")
         else:
             get_logger().info(f"Successfully parsed AI prediction after fallbacks",
                               artifact={'response_text': response_text})

@@ -6,6 +6,7 @@ from pr_agent.algo.types import FilePatchInfo
 from pr_agent.algo.utils import Range, process_description
 from pr_agent.config_loader import get_settings
 from pr_agent.log import get_logger
+import sys
 
 MAX_FILES_ALLOWED_FULL = 50
 
@@ -183,7 +184,7 @@ class GitProvider(ABC):
                     return
         except Exception as e:
             get_logger().exception(f"Failed to update persistent review, error: {e}")
-            pass
+            sys.exit(f"Failed to update persistent review, error: {e}")
         self.publish_comment(pr_comment)
 
 
