@@ -4,6 +4,7 @@ import re
 import traceback
 from functools import partial
 from typing import List, Tuple
+import sys
 
 import yaml
 from jinja2 import Environment, StrictUndefined
@@ -95,7 +96,7 @@ class PRDescription:
             get_logger().info(f"Generating a PR description for pr_id: {self.pr_id}")
             relevant_configs = {'pr_description': dict(get_settings().pr_description),
                                 'config': dict(get_settings().config)}
-            get_logger().debug("Relevant configs", artifacts=relevant_configs)
+            get_logger().info("Relevant configs", artifacts=relevant_configs)
             if get_settings().config.publish_output and not get_settings().config.get('is_auto_command', False):
                 self.git_provider.publish_comment("Preparing PR description...", is_temporary=True)
 
@@ -115,11 +116,13 @@ class PRDescription:
                 self.file_label_dict = self._prepare_file_labels()
 
             pr_labels, pr_file_changes = [], []
+            get_logger().info("Preparing labels...")
             if get_settings().pr_description.publish_labels:
                 pr_labels = self._prepare_labels()
             else:
                 get_logger().debug(f"Publishing labels disabled")
 
+            get_logger().info("Preparing PR answer...")
             if get_settings().pr_description.use_description_markers:
                 pr_title, pr_body, changes_walkthrough, pr_file_changes = self._prepare_pr_answer_with_markers()
             else:
@@ -127,7 +130,7 @@ class PRDescription:
                 if not self.git_provider.is_supported(
                         "publish_file_comments") or not get_settings().pr_description.inline_file_summary:
                     pr_body += "\n\n" + changes_walkthrough
-            get_logger().debug("PR output", artifact={"title": pr_title, "body": pr_body})
+            get_logger().info("PR output", artifact={"title": pr_title, "body": pr_body})
 
             # Add help text if gfm_markdown is supported
             if self.git_provider.is_supported("gfm_markdown") and get_settings().pr_description.enable_help_text:
@@ -152,7 +155,7 @@ class PRDescription:
                 pr_body += show_relevant_configurations(relevant_section='pr_description')
 
             if get_settings().config.publish_output:
-
+                get_logger().info(f"Publishing PR description")
                 # publish labels
                 if get_settings().pr_description.publish_labels and pr_labels and self.git_provider.is_supported("get_labels"):
                     original_labels = self.git_provider.get_pr_labels(update=True)
@@ -194,6 +197,7 @@ class PRDescription:
         except Exception as e:
             get_logger().error(f"Error generating PR description {self.pr_id}: {e}",
                                artifact={"traceback": traceback.format_exc()})
+            sys.exit(f"Error generating PR description {self.pr_id}: {e}")
 
         return ""
 

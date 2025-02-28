@@ -4,6 +4,7 @@ import traceback
 from collections import OrderedDict
 from functools import partial
 from typing import List, Tuple
+import sys
 
 from jinja2 import Environment, StrictUndefined
 
@@ -130,10 +131,11 @@ class PRReviewer:
             get_logger().info(f'Reviewing PR: {self.pr_url} ...')
             relevant_configs = {'pr_reviewer': dict(get_settings().pr_reviewer),
                                 'config': dict(get_settings().config)}
-            get_logger().debug("Relevant configs", artifacts=relevant_configs)
+            get_logger().info("Relevant configs", artifacts=relevant_configs)
 
             # ticket extraction if exists
             await extract_and_cache_pr_tickets(self.git_provider, self.vars)
+            get_logger().info("Tickets extracted and cached")
 
             if self.incremental.is_incremental and hasattr(self.git_provider, "unreviewed_files_set") and not self.git_provider.unreviewed_files_set:
                 get_logger().info(f"Incremental review is enabled for {self.pr_url} but there are no new files")
@@ -148,13 +150,15 @@ class PRReviewer:
             if get_settings().config.publish_output and not get_settings().config.get('is_auto_command', False):
                 self.git_provider.publish_comment("Preparing review...", is_temporary=True)
 
+            get_logger().info("Preparing review with fallback models...")
             await retry_with_fallback_models(self._prepare_prediction, model_type=ModelType.REGULAR)
             if not self.prediction:
                 self.git_provider.remove_initial_comment()
                 return None
 
+            get_logger().info("Preparing review...")
             pr_review = self._prepare_pr_review()
-            get_logger().debug(f"PR output", artifact=pr_review)
+            get_logger().info(f"PR output", artifact=pr_review)
 
             if get_settings().config.publish_output:
                 # publish the review
@@ -165,6 +169,7 @@ class PRReviewer:
                                                                  update_header=True,
                                                                  final_update_message=final_update_message, )
                 else:
+                    get_logger().info("Publishing comment...")
                     self.git_provider.publish_comment(pr_review)
 
                 self.git_provider.remove_initial_comment()
@@ -174,6 +179,7 @@ class PRReviewer:
                 return
         except Exception as e:
             get_logger().error(f"Failed to review PR: {e}")
+            sys.exit(f"Failed to review PR: {e}")
 
     async def _prepare_prediction(self, model: str) -> None:
         self.patches_diff = get_pr_diff(self.git_provider,
