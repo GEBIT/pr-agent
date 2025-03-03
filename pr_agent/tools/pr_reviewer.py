@@ -26,6 +26,8 @@ from pr_agent.log import get_logger
 from pr_agent.servers.help import HelpMessage
 from pr_agent.tools.ticket_pr_compliance_check import (
     extract_and_cache_pr_tickets, extract_tickets)
+import pr_agent.gebit_flags as gebitFlags
+
 
 
 class PRReviewer:
@@ -158,7 +160,7 @@ class PRReviewer:
 
             get_logger().info("Preparing review...")
             pr_review = self._prepare_pr_review()
-            get_logger().info(f"PR output", artifact=pr_review)
+            get_logger().info(f"PR output" + pr_review)
 
             if get_settings().config.publish_output:
                 # publish the review
@@ -261,9 +263,11 @@ class PRReviewer:
         if get_settings().get('config', {}).get('output_relevant_configurations', False):
             markdown_text += show_relevant_configurations(relevant_section='pr_reviewer')
         
-        global skippingFiles
-        if skippingFiles:
-            markdown_text += "\nWarning: Some files were skipped, because the request is to large!"
+        if gebitFlags.skippingFiles:
+            get_logger().warning("Some files were skipped, because the request is too large!")
+            markdown_text += "\nWarning: Some files were skipped, because the request is too large!\n"
+        else:
+            get_logger().info("No files have been skipped.")
 
         # Add custom labels from the review prediction (effort, security)
         self.set_review_labels(data)

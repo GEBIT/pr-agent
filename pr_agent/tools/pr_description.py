@@ -29,7 +29,7 @@ from pr_agent.servers.help import HelpMessage
 from pr_agent.tools.ticket_pr_compliance_check import (
     extract_and_cache_pr_tickets, extract_ticket_links_from_pr_description,
     extract_tickets)
-
+import pr_agent.gebit_flags as gebitFlags
 
 class PRDescription:
     def __init__(self, pr_url: str, args: list = None,
@@ -130,7 +130,8 @@ class PRDescription:
                 if not self.git_provider.is_supported(
                         "publish_file_comments") or not get_settings().pr_description.inline_file_summary:
                     pr_body += "\n\n" + changes_walkthrough
-            get_logger().info("PR output", artifact={"title": pr_title, "body": pr_body})
+            get_logger().info("Title: " + pr_title)
+            get_logger().info("Body:" + pr_body)
 
             # Add help text if gfm_markdown is supported
             if self.git_provider.is_supported("gfm_markdown") and get_settings().pr_description.enable_help_text:
@@ -168,9 +169,11 @@ class PRDescription:
                     else:
                         get_logger().debug(f"Labels are the same, not updating")
                 
-                global skippingFiles
-                if skippingFiles:
-                    pr_body += "\nWarning: Some files were skipped, because the request is to large!\n"
+                if gebitFlags.skippingFiles:
+                    get_logger().warning("Some files were skipped, because the request is too large!")
+                    pr_body += "\nWarning: Some files were skipped, because the request is too large!\n"
+                else:
+                    get_logger().info("No files have been skipped.")
                 # publish description
                 if get_settings().pr_description.publish_description_as_comment:
                     full_markdown_description = f"## Title\n\n{pr_title}\n\n___\n{pr_body}"

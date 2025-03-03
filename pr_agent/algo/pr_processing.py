@@ -5,6 +5,7 @@ from typing import Callable, List, Tuple
 
 from github import RateLimitExceededException
 
+import pr_agent.gebit_flags as gebitFlags
 from pr_agent.algo.file_filter import filter_ignored
 from pr_agent.algo.git_patch_processing import (
     convert_to_hunks_with_lines_numbers, extend_patch, handle_patch_deletions)
@@ -317,9 +318,8 @@ def generate_full_patch(convert_hunks_to_line_numbers, file_dict, max_tokens_mod
             # TODO: Option for alternative logic to remove hunks from the patch to reduce the number of tokens
             #  until we meet the requirements
             if get_settings().config.verbosity_level >= 2:
-                get_logger().warning(f"Patch too large, skipping it: '{filename}'")
-                global skippingFiles
-                skippingFiles = True
+                get_logger().warning(f"Patch too large, skipping it: '{filename}'. Setting skippingFiles to True")
+                gebitFlags.skippingFiles = True
             remaining_files_list_new.append(filename)
             continue
 
