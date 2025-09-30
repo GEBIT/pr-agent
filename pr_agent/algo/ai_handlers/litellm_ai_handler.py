@@ -243,13 +243,12 @@ class LiteLLMAIHandler(BaseAiHandler):
                 get_logger().info(f"\nSystem prompt:\n{system}")
                 get_logger().info(f"\nUser prompt:\n{user}")
             
-            if "ollama" in model:
-                # Set variable context size for ollama models
-                # Duplicate context window to leave space for result
-                get_logger().info(f"Custom ollama context size from {get_settings().config.max_model_tokens}")
-                inputTokens = int(get_settings().config.max_model_tokens)
-                kwargs["num_ctx"] = round(1.4 * inputTokens)
-                get_logger().info(f"Max model tokens is {get_settings().config.max_model_tokens} and setting ollama context size to {kwargs["num_ctx"]}")
+            # Set variable context size for ollama models
+            # Duplicate context window to leave space for result
+            get_logger().info(f"Custom context size from {get_settings().config.max_model_tokens}")
+            inputTokens = int(get_settings().config.max_model_tokens)
+            kwargs["num_ctx"] = round(1.4 * inputTokens)
+            get_logger().info(f"Max model tokens is {get_settings().config.max_model_tokens} and setting context size to {kwargs["num_ctx"]}")
             get_logger().info("Completing...")
             response = await acompletion(**kwargs)
         except (openai.APIError, openai.APITimeoutError) as e:
