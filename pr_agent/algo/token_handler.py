@@ -18,9 +18,13 @@ class TokenEncoder:
         if cls._encoder_instance is None or model != cls._model:  # Check without acquiring the lock for performance
             with cls._lock:  # Lock acquisition to ensure thread safety
                 if cls._encoder_instance is None or model != cls._model:
-                    cls._model = model
-                    cls._encoder_instance = encoding_for_model(cls._model) if "gpt" in cls._model else get_encoding(
-                        "cl100k_base")
+                    cls._model = model.replace("openai/", "").replace("azure/", "").replace("azure-ad/", "")
+                    if "gpt-oss" in cls._model:
+                        cls._encoder_instance = get_encoding("o200k_harmony")
+                    elif "gpt" in cls._model:
+                        cls._encoder_instance = encoding_for_model(cls._model)
+                    else:
+                        cls._encoder_instance = get_encoding("cl100k_base")
         return cls._encoder_instance
 
 
