@@ -5,6 +5,7 @@ import urllib.parse
 from typing import Any, Optional, Tuple, Union
 from urllib.parse import parse_qs, urlparse
 
+import sys
 import gitlab
 import requests
 from gitlab import (GitlabAuthenticationError, GitlabCreateError,
@@ -489,6 +490,7 @@ class GitLabProvider(GitProvider):
             self.mr.save()
         except Exception as e:
             get_logger().exception(f"Could not update merge request {self.id_mr} description: {e}")
+            sys.exit(f"Could not update merge request {self.id_mr} description: {e}")
 
     def get_latest_commit_url(self):
         try:
@@ -689,6 +691,7 @@ class GitLabProvider(GitProvider):
                                          target_file, target_line_no, original_suggestion)
             except Exception as e:
                 get_logger().exception(f"Could not publish code suggestion:\nsuggestion: {suggestion}\nerror: {e}")
+                sys.exit(f"Could not publish code suggestion:\nsuggestion: {suggestion}\nerror: {e}")
 
         # note that we publish suggestions one-by-one. so, if one fails, the rest will still be published
         return True

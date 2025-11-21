@@ -384,12 +384,19 @@ class LiteLLMAIHandler(BaseAiHandler):
 
             if get_settings().config.verbosity_level >= 2:
                 get_logger().info(f"\nSystem prompt:\n{system}")
-                get_logger().info(f"\nUser prompt:\n{user}")
-
-            # Get completion with automatic streaming detection
+                get_logger().info(f"\nUser prompt:\n{user}")            
+            # Set variable context size for ollama models
+            # Duplicate context window to leave space for result
+            get_logger().info(f"Custom context size from {get_settings().config.max_model_tokens}")
+            inputTokens = int(get_settings().config.max_model_tokens)
+            kwargs["num_ctx"] = round(1.4 * inputTokens)
+            get_logger().info(f"Max model tokens is {get_settings().config.max_model_tokens} and setting context size to {kwargs["num_ctx"]}")
+            get_logger().info("Completing...")
             resp, finish_reason, response_obj = await self._get_completion(**kwargs)
-
-        except openai.RateLimitError as e:
+        except (openai.APIError, openai.APITimeoutError) as e:
+            get_logger().warning(f"Error during LLM inference: {e}")
+            raise
+        except (openai.RateLimitError) as e:
             get_logger().error(f"Rate limit error during LLM inference: {e}")
             raise
         except openai.APIError as e:
@@ -404,8 +411,13 @@ class LiteLLMAIHandler(BaseAiHandler):
         # log the full response for debugging
         response_log = self.prepare_logs(response_obj, system, user, resp, finish_reason)
         get_logger().debug("Full_response", artifact=response_log)
-
-        # for CLI debugging
+        if ("<think>" in resp):
+            # remove think content between tags
+            get_logger().info("Removing think content...")
+            get_logger().info(f"Think content: {resp[resp.index('<think>'):resp.index('</think>')]}")
+            startIndex = resp.index("<think>")
+            stopIndex = resp.index("</think>")
+            resp = resp[:startIndex] + resp[stopIndex+len("</think>"):]
         if get_settings().config.verbosity_level >= 2:
             get_logger().info(f"\nAI response:\n{resp}")
 

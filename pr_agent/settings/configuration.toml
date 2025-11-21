@@ -11,7 +11,7 @@ fallback_models=["o4-mini"]
 #model_reasoning="o4-mini" # dedicated reasoning model for self-reflection
 #model_weak="gpt-4o" # optional, a weaker model to use for some easier tasks
 # CLI
-git_provider="github"
+git_provider="gitlab"
 publish_output=true
 publish_output_progress=true
 verbosity_level=0 # 0,1,2
@@ -275,7 +275,7 @@ push_commands = [
 ]
 
 [gitlab]
-url = "https://gitlab.com"
+url = "https://gitlab.local.gebit.de/"
 expand_submodule_diffs = false
 pr_commands = [
     "/describe --pr_description.final_update_message=false",

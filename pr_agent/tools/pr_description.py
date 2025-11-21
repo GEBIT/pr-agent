@@ -4,6 +4,7 @@ import re
 import traceback
 from functools import partial
 from typing import List, Tuple
+import sys
 
 import yaml
 from jinja2 import Environment, StrictUndefined
@@ -28,7 +29,7 @@ from pr_agent.servers.help import HelpMessage
 from pr_agent.tools.ticket_pr_compliance_check import (
     extract_and_cache_pr_tickets, extract_ticket_links_from_pr_description,
     extract_tickets)
-
+import pr_agent.gebit_flags as gebitFlags
 
 class PRDescription:
     def __init__(self, pr_url: str, args: list = None,
@@ -117,11 +118,13 @@ class PRDescription:
                 self.file_label_dict = self._prepare_file_labels()
 
             pr_labels, pr_file_changes = [], []
+            get_logger().info("Preparing labels...")
             if get_settings().pr_description.publish_labels:
                 pr_labels = self._prepare_labels()
             else:
                 get_logger().debug(f"Publishing labels disabled")
 
+            get_logger().info("Preparing PR answer...")
             if get_settings().pr_description.use_description_markers:
                 pr_title, pr_body, changes_walkthrough, pr_file_changes = self._prepare_pr_answer_with_markers()
             else:
@@ -129,7 +132,8 @@ class PRDescription:
                 if not self.git_provider.is_supported(
                         "publish_file_comments") or not get_settings().pr_description.inline_file_summary:
                     pr_body += "\n\n" + changes_walkthrough + "___\n\n"
-            get_logger().debug("PR output", artifact={"title": pr_title, "body": pr_body})
+            get_logger().info("Title: " + pr_title)
+            get_logger().info("Body:" + pr_body)
 
             # Add help text if gfm_markdown is supported
             if self.git_provider.is_supported("gfm_markdown") and get_settings().pr_description.enable_help_text:
@@ -154,7 +158,7 @@ class PRDescription:
                 pr_body += show_relevant_configurations(relevant_section='pr_description')
 
             if get_settings().config.publish_output:
-
+                get_logger().info(f"Publishing PR description")
                 # publish labels
                 if get_settings().pr_description.publish_labels and pr_labels and self.git_provider.is_supported("get_labels"):
                     original_labels = self.git_provider.get_pr_labels(update=True)
@@ -166,7 +170,12 @@ class PRDescription:
                         self.git_provider.publish_labels(new_labels)
                     else:
                         get_logger().debug(f"Labels are the same, not updating")
-
+                
+                if gebitFlags.skippingFiles:
+                    get_logger().warning("Some files were skipped, because the request is too large!")
+                    pr_body += "\nWarning: Some files were skipped, because the request is too large!\n"
+                else:
+                    get_logger().info("No files have been skipped.")
                 # publish description
                 if get_settings().pr_description.publish_description_as_comment:
                     full_markdown_description = f"## Title\n\n{pr_title.strip()}\n\n___\n{pr_body}"
@@ -196,6 +205,7 @@ class PRDescription:
         except Exception as e:
             get_logger().error(f"Error generating PR description {self.pr_id}: {e}",
                                artifact={"traceback": traceback.format_exc()})
+            sys.exit(f"Error generating PR description {self.pr_id}: {e}")
 
         return ""
 

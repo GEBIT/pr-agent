@@ -4,6 +4,7 @@ import traceback
 from collections import OrderedDict
 from functools import partial
 from typing import List, Tuple
+import sys
 
 from jinja2 import Environment, StrictUndefined
 
@@ -25,6 +26,8 @@ from pr_agent.log import get_logger
 from pr_agent.servers.help import HelpMessage
 from pr_agent.tools.ticket_pr_compliance_check import (
     extract_and_cache_pr_tickets, extract_tickets)
+import pr_agent.gebit_flags as gebitFlags
+
 
 
 class PRReviewer:
@@ -134,10 +137,11 @@ class PRReviewer:
             get_logger().info(f'Reviewing PR: {self.pr_url} ...')
             relevant_configs = {'pr_reviewer': dict(get_settings().pr_reviewer),
                                 'config': dict(get_settings().config)}
-            get_logger().debug("Relevant configs", artifacts=relevant_configs)
+            get_logger().info("Relevant configs", artifacts=relevant_configs)
 
             # ticket extraction if exists
             await extract_and_cache_pr_tickets(self.git_provider, self.vars)
+            get_logger().info("Tickets extracted and cached")
 
             if self.incremental.is_incremental and hasattr(self.git_provider, "unreviewed_files_set") and not self.git_provider.unreviewed_files_set:
                 get_logger().info(f"Incremental review is enabled for {self.pr_url} but there are no new files")
@@ -152,13 +156,15 @@ class PRReviewer:
             if get_settings().config.publish_output and not get_settings().config.get('is_auto_command', False):
                 self.git_provider.publish_comment("Preparing review...", is_temporary=True)
 
+            get_logger().info("Preparing review with fallback models...")
             await retry_with_fallback_models(self._prepare_prediction, model_type=ModelType.REGULAR)
             if not self.prediction:
                 self.git_provider.remove_initial_comment()
                 return None
 
+            get_logger().info("Preparing review...")
             pr_review = self._prepare_pr_review()
-            get_logger().debug(f"PR output", artifact=pr_review)
+            get_logger().info(f"PR output" + pr_review)
 
             should_publish = get_settings().config.publish_output and self._should_publish_review_no_suggestions(pr_review)
             if not should_publish:
@@ -182,6 +188,7 @@ class PRReviewer:
             self.git_provider.remove_initial_comment()
         except Exception as e:
             get_logger().error(f"Failed to review PR: {e}")
+            sys.exit(f"Failed to review PR: {e}")
 
     def _should_publish_review_no_suggestions(self, pr_review: str) -> bool:
         return get_settings().pr_reviewer.get('publish_output_no_suggestions', True) or "No major issues detected" not in pr_review
@@ -269,6 +276,12 @@ class PRReviewer:
         # Output the relevant configurations if enabled
         if get_settings().get('config', {}).get('output_relevant_configurations', False):
             markdown_text += show_relevant_configurations(relevant_section='pr_reviewer')
+        
+        if gebitFlags.skippingFiles:
+            get_logger().warning("Some files were skipped, because the request is too large!")
+            markdown_text += "\nWarning: Some files were skipped, because the request is too large!\n"
+        else:
+            get_logger().info("No files have been skipped.")
 
         # Add custom labels from the review prediction (effort, security)
         self.set_review_labels(data)

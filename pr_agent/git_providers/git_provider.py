@@ -9,6 +9,7 @@ from pr_agent.algo.types import FilePatchInfo
 from pr_agent.algo.utils import Range, process_description
 from pr_agent.config_loader import get_settings
 from pr_agent.log import get_logger
+import sys
 
 MAX_FILES_ALLOWED_FULL = 50
 
@@ -323,8 +324,9 @@ class GitProvider(ABC):
                     return comment
         except Exception as e:
             get_logger().exception(f"Failed to update persistent review, error: {e}")
-            pass
-        return self.publish_comment(pr_comment)
+            sys.exit(f"Failed to update persistent review, error: {e}")
+        self.publish_comment(pr_comment)
+
 
     @abstractmethod
     def publish_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str, original_suggestion=None):
