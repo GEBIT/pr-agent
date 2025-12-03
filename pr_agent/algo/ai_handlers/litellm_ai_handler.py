@@ -384,13 +384,8 @@ class LiteLLMAIHandler(BaseAiHandler):
 
             if get_settings().config.verbosity_level >= 2:
                 get_logger().info(f"\nSystem prompt:\n{system}")
-                get_logger().info(f"\nUser prompt:\n{user}")            
-            # Set variable context size for ollama models
-            # Duplicate context window to leave space for result
+                get_logger().info(f"\nUser prompt:\n{user}")           
             get_logger().info(f"Custom context size from {get_settings().config.max_model_tokens}")
-            inputTokens = int(get_settings().config.max_model_tokens)
-            kwargs["num_ctx"] = round(1.4 * inputTokens)
-            get_logger().info(f"Max model tokens is {get_settings().config.max_model_tokens} and setting context size to {kwargs["num_ctx"]}")
             get_logger().info("Completing...")
             resp, finish_reason, response_obj = await self._get_completion(**kwargs)
         except (openai.APIError, openai.APITimeoutError) as e:

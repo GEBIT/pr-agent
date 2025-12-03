@@ -173,6 +173,7 @@ MAX_TOKENS = {
     "mistral/codestral-mamba-latest": 256000,
     "codestral/codestral-latest": 8191,
     "codestral/codestral-2405": 8191,
+    "openai/qwen3-235b": 120000, # 131072 but we can't exactly compute the token count
 }
 
 USER_MESSAGE_ONLY_MODELS = [
